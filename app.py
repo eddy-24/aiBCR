@@ -61,75 +61,21 @@ def extract_keywords_from_synonyms(synonyms_dict):
 keywords_dict = extract_keywords_from_synonyms(synonyms)
 
 
-def parse_question(text):
-    clean = clean_text(text)
-    words = set(clean.split())
-
-    direct_keywords = {
-    "raport_financiar": ["raport", "financiar", "situatie", "finante"],
-    "cheltuieli_mâncare": ["mancare", "alimentare", "supermarket", "restaurante", "mese", "mananci"],
-    "cheltuieli_utilități": ["utilitati", "curent", "electricitate", "gaz", "apa", "facturi"],
-    "cheltuieli_transport": ["transport", "combustibil", "naveta", "calatorii", "autobuz", "tren"],
-    "sold_total_conturi": ["sold total", "conturi", "total", "banca", "balanta"],
-    "sold_cont_curent": ["cont", "curent", "sold curent", "disponibil"],
-    "sold_cont_depozit": ["depozit", "economii", "sold depozit", "cont economii"],
-    "sold_credit": ["credit", "sold credit", "datorie", "imprumut"],
-    "limita_card_credit": ["limita", "card", "credit", "disponibil"],
-    "cheltuieli_digital_payments": ["apple pay", "google pay", "portofel digital", "plati digitale"],
-    "tranzacții_atm": ["atm", "retrageri", "plati atm", "tranzactii atm"],
-    "cheltuieli_retail": ["retail", "shopping", "magazine", "haine", "cumparaturi"],
-    "limita_credit_utilizata": ["limita credit", "utilizat credit", "credit folosit"],
-    "venit_luna_trecuta": ["venit", "salariu", "incasari", "luna trecuta"],
-    "economisire_10_percent": ["economisire", "economii", "10%", "salariu", "pun peoparte"],
-    "produse_active_banca": ["produse banca", "carduri", "conturi", "servicii bancare"],
-    "durata_relatie_banca": ["durata relatie", "client banca", "de cat timp", "vechime cont"],
-    "stare_cererilor_imprumut": ["cereri imprumut", "status imprumut", "cerere credit"],
-    "cheltuieli_calatorii": ["calatorii", "vacante", "excursii", "transport international"],
-    "cheltuieli_divertisment": ["divertisment", "distractie", "evenimente", "cluburi", "petreceri"],
-    "sold_cont_economii": ["economii", "cont economii", "sold economii"],
-    "intretinere_locuinta": ["intretinere", "reparatii", "locuinta", "renovare", "casa"],
-    "cheltuieli_îmbrăcăminte": ["haine", "imbracaminte", "shopping", "articole vestimentare"],
-    "servicii_profesionale": ["servicii profesionale", "consultanta", "avocat", "servicii juridice"],
-    "cheltuieli_restaurante": ["restaurante", "mese in oras", "baruri", "cafenele", "mancare la restaurant"],
-    "utilizare_overdraft": ["overdraft", "limita overdraft", "cont overdraft", "utilizare overdraft"],
-    "sold_refinanțare": ["refinantare", "sold refinantare", "credit refinantare"],
-    "tranzacții_international": ["tranzactii internationale", "plati internationale", "cheltuieli internationale"],
-    "venituri_cheltuieli_anul": ["venituri anuale", "cheltuieli anuale", "raport anual", "balanta anuala"],
-    "istoric_imprumuturi": ["istoric imprumuturi", "cereri credit", "status imprumuturi"],
-    "produse_asigurare": ["asigurari", "produse asigurare", "polite asigurare"],
-    "plăți_portofele_digitale": ["portofele digitale", "plati digitale", "apple pay", "google pay"],
-    "servicii_afaceri": ["servicii afaceri", "consultanta afaceri", "servicii profesionale afaceri"],
-    "comisioane_bancare": ["comisioane bancare", "taxe banca", "costuri bancare"],
-    "sold_economii": ["sold economii", "cont economii", "economii"],
-    "tranzacții_internet_banking": ["internet banking", "plati online", "tranzactii online"],
-    "scor_credit": ["scor credit", "rating credit", "biroul de credit"],
-    "utilizare_credit_ipotecar": ["credit ipotecar", "utilizare ipotecar", "sold credit ipotecar"],
-    "sold_conturi_ultimele_3_luni": ["sold mediu", "media conturi", "ultimele 3 luni"],
-    "evolutie_cheltuieli_ultimele_12_luni": ["evolutie cheltuieli", "cheltuieli 12 luni", "evolutie anuala"],
-}
-
-
-    # 1. Caută dacă vreun cuvânt din întrebarea curățată e în direct_keywords
-    for word in words:
-        if word in direct_keywords:
-            return direct_keywords[word], None, None
-
-    # 2. Altfel, folosește matching pe sinonime cu scor simplu
-    max_score = 0
+def parse_question_levenshtein(text, synonyms_dict, threshold=0.6):
+    text = remove_accents(text.lower().strip())
     best_intent = None
-    for intent, synonyms_list in synonyms.items():
-        for synonym in synonyms_list:
-            syn_words = set(synonym.lower().split())
-            score = len(words.intersection(syn_words))
-            if score > max_score:
-                max_score = score
+    best_score = 0.0
+    for intent, phrases in synonyms_dict.items():
+        for phrase in phrases:
+            phrase_clean = remove_accents(phrase.lower())
+            score = Levenshtein.ratio(text, phrase_clean)
+            if score > best_score:
+                best_score = score
                 best_intent = intent
-
-    if max_score > 0:
+    if best_score >= threshold:
         return best_intent, None, None
-
-    return None, None, None
-
+    else:
+        return None, None, None
 
 def remove_question_mark_from_synonym(synonym):
     return synonym.replace("?", "").strip()
@@ -239,6 +185,9 @@ def financial_questions(data_client):
             answer = "Îmi pare rău, nu am înțeles întrebarea. Te rog reformulează."
         print(f"Răspuns: {answer}")
         print("-" * 40)
+
+def parse_question(text):
+    return parse_question_levenshtein(text, synonyms)
 
 
 def main():
