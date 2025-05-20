@@ -6,6 +6,9 @@ import Levenshtein
 from answers import *
 import spacy
 nlp = spacy.load("ro_core_news_sm")
+from topics import security_education, basic_finance_education, advanced_finance_education, adolescent_finance_education, parent_age_education
+
+
 # Funcție pentru eliminarea diacriticelor
 def remove_accents(text):
     nfkd_form = unicodedata.normalize('NFKD', text)
@@ -175,19 +178,95 @@ def get_answer_live(data):
         print("Răspuns:", response)
         print("-" * 40)
 
-if __name__ == "__main__":
-    data_client = {
-        "TRX_IN_ALL_AMT": 10000.0,
-        "TRX_OUT_ALL_AMT": 8000.0,
-        "DEP_TOTAL_BALANCE_AMT": 5000.0,
-        "CRT_TOTAL_BALANCE_AMT": 3000.0,
-        "GPI_LST_SALARY_ND": 4000.0,
-        "MCC_FOOD_AMT": 1200.0,
-        "MCC_UTILITY_SERV_AMT": 300.0,
-        "MCC_TRANSPORTATION_AMT": 200.0,
-        "CEC_TOTAL_BALANCE_AMT": 7000.0,
-        "ICC_APPROVED_LIMIT": 1500.0,
-        "ICC_REMAINING_LIMIT_AMT": 1000.0,
+
+# meniu ai cu lectii
+def ai_welcome():
+    print("Bună! Bine ai venit la BCR Banking. Cu ce te pot ajuta azi? 😊")
+    print("Selectează o opțiune:")
+    print("1. Vreau să învăț educație financiară cu Scoala de bani📚")
+    print("2. Am întrebări despre contul meu 💼")
+
+def education_menu():
+    categories = {
+        "1": ("Cunoștințe de bază în educația financiară", basic_finance_education),
+        "2": ("Cunoștințe avansate în educația financiară", advanced_finance_education),
+        "3": ("Securitate Cibernetică", security_education),
+        "4": ("Conversații despre bani cu adolescenții", adolescent_finance_education),
+        "5": ("Cum îți educi copiii în funcție de vârstă", parent_age_education),
     }
 
-    get_answer_live(data_client)
+    print("\nPerfect! Alege o categorie de interes:")
+    for k, (name, _) in categories.items():
+        print(f"{k}. {name}")
+
+    cat_choice = input("Introdu numărul categoriei: ").strip()
+    if cat_choice not in categories:
+        print("Te rog să introduci un număr valid.")
+        return
+
+    cat_name, lessons_dict = categories[cat_choice]
+    print(f"\nAi ales categoria: {cat_name}")
+
+    # Afișează lecțiile disponibile
+    keys = list(lessons_dict.keys())
+    for i, key in enumerate(keys, 1):
+        print(f"{i}. {lessons_dict[key]['intrebare']}")
+
+    lesson_choice = input("Alege numărul lecției dorite: ").strip()
+    if not lesson_choice.isdigit() or not (1 <= int(lesson_choice) <= len(keys)):
+        print("Selecție invalidă.")
+        return
+
+    selected_key = keys[int(lesson_choice) - 1]
+    lesson = lessons_dict[selected_key]
+    print(f"\n--- {lesson['intrebare']} ---\n")
+    print(lesson['raspuns'])
+    print("\n" + "-"*40 + "\n")
+
+def financial_questions(data_client):
+    print("\nHai să vedem ce informații am despre contul tău. Pune întrebarea sau tastează 'exit' pentru a ieși.")
+    while True:
+        question = input("Întrebarea ta: ").strip()
+        if question.lower() == "exit":
+            print("Mulțumim că ai folosit BCR Banking. O zi frumoasă! 👋")
+            break
+        # Aici apelezi funcția ta parse_question + get_answer_live (sau o variantă adaptată)
+        intent, _, _ = parse_question(question)
+        response_function = intents_dict.get(intent)
+        if response_function and isinstance(response_function, str):
+            answer = globals()[response_function](data_client)
+        else:
+            answer = "Îmi pare rău, nu am înțeles întrebarea. Te rog reformulează."
+        print(f"Răspuns: {answer}")
+        print("-" * 40)
+
+
+def main():
+    ai_welcome()
+    while True:
+        option = input("Alege opțiunea 1 sau 2 (sau 'exit' pentru a ieși): ").strip()
+        if option.lower() == "exit":
+            print("La revedere!")
+            break
+        elif option == "1":
+            education_menu()
+        elif option == "2":
+            data_client = {
+                "TRX_IN_ALL_AMT": 10000.0,
+                "TRX_OUT_ALL_AMT": 8000.0,
+                "DEP_TOTAL_BALANCE_AMT": 5000.0,
+                "CRT_TOTAL_BALANCE_AMT": 3000.0,
+                "GPI_LST_SALARY_ND": 4000.0,
+                "MCC_FOOD_AMT": 1200.0,
+                "MCC_UTILITY_SERV_AMT": 300.0,
+                "MCC_TRANSPORTATION_AMT": 200.0,
+                "CEC_TOTAL_BALANCE_AMT": 7000.0,
+                "ICC_APPROVED_LIMIT": 1500.0,
+                "ICC_REMAINING_LIMIT_AMT": 1000.0,
+            }
+            financial_questions(data_client)
+        else:
+            print("Opțiune invalidă. Te rog să alegi 1 sau 2.")
+
+if __name__ == "__main__":
+    main()
